@@ -52,8 +52,9 @@ const TeamLeavesPage: React.FC = () => {
   
   // Check if the current user can approve a specific leave request using the shared utility
   const canApproveRequest = (request: LeaveRequest) => {
-    const requestUserRole = request.user?.role;
-    return canApproveRequestUtil(userRole, hasCustomAdminRole, request.status, request.metadata, requestUserRole);
+    // The user property in LeaveRequest doesn't include role, so we pass undefined
+    // The utility function will handle this case appropriately
+    return canApproveRequestUtil(userRole, hasCustomAdminRole, request.status, request.metadata, undefined);
   };
 
   // Check if user has permission to view team leaves
@@ -88,8 +89,8 @@ const TeamLeavesPage: React.FC = () => {
         }
       } catch (err) {
         console.error("Error fetching team leave requests:", err);
-        // Return empty data instead of throwing
-        return { data: [], total: 0 };
+        // Return empty data instead of throwing, with the same structure as GetLeaveRequestsResponse
+        return { leaveRequests: [], count: 0 };
       }
     },
     enabled: hasTeamLeavePermission, // Only run query if user has permission

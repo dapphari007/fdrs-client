@@ -135,7 +135,7 @@ const RolesPage: React.FC = () => {
   
   const handleToggleStatus = async (id: string, currentStatus: boolean) => {
     try {
-      const response = await axios.patch(
+      await axios.patch(
         `${config.apiUrl}/roles/${id}/toggle-status`,
         { isActive: !currentStatus },
         {

@@ -1,4 +1,4 @@
-import React from "react";
+
 import WorkflowLevelsConfig from "../../components/admin/WorkflowLevelsConfig";
 
 export default function WorkflowLevelsPage() {

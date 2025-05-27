@@ -310,9 +310,17 @@ const PendingLeaveRequestsSection: React.FC = () => {
   // Fetch pending leave requests that need approval
   const { data, isLoading, error } = useQuery({
     queryKey: ["pendingApprovalRequests"],
-    queryFn: () => getTeamLeaveRequests({
-      status: "pending_approval", // This fetches both pending and partially_approved
-    }),
+    queryFn: async () => {
+      try {
+        return await getTeamLeaveRequests({
+          status: "pending_approval", // This fetches both pending and partially_approved
+        });
+      } catch (err) {
+        console.error("Error fetching pending leave requests:", err);
+        // Return empty data with the same structure as GetLeaveRequestsResponse
+        return { leaveRequests: [], count: 0 };
+      }
+    },
     enabled: !!userProfile && (userProfile.role === "super_admin" || userProfile.role === "admin"),
     retry: 1,
   });
@@ -433,7 +441,15 @@ const LeaveBalancesSection: React.FC = () => {
   // Fetch leave balances
   const { data: leaveBalancesData, isLoading, error } = useQuery({
     queryKey: ["allLeaveBalances", year],
-    queryFn: () => getAllLeaveBalances({ year }),
+    queryFn: async () => {
+      try {
+        return await getAllLeaveBalances({ year });
+      } catch (err) {
+        console.error("Error fetching leave balances:", err);
+        // Return empty data with appropriate structure
+        return { leaveBalances: [], count: 0 };
+      }
+    },
     enabled: !!userProfile && (userProfile.role === "super_admin" || userProfile.role === "admin"),
     retry: 1
   });
@@ -445,7 +461,10 @@ const LeaveBalancesSection: React.FC = () => {
     }
   }, [error]);
 
-  const leaveBalances = leaveBalancesData || [];
+  // Handle both possible return types from the query
+  const leaveBalances = Array.isArray(leaveBalancesData) 
+    ? leaveBalancesData 
+    : (leaveBalancesData?.leaveBalances || []);
 
   // Filter leave balances based on search term
   const filteredBalances = leaveBalances.filter((balance: any) => {

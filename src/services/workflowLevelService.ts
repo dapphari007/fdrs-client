@@ -4,6 +4,8 @@ import { UserRole } from "../types/index";
 export interface WorkflowLevel {
   id: string;
   level: number;
+  name: string;
+  description: string;
   approverType: string;
   fallbackRoles: UserRole[];
   isActive: boolean;

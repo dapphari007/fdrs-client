@@ -14,6 +14,7 @@ import {
   BriefcaseIcon,
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../../context/AuthContext";
+import { DashboardType } from "../../types";
 
 interface MainLayoutProps {
   children: React.ReactNode;
