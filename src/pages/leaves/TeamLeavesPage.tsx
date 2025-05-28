@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   getTeamLeaveRequests,
@@ -16,7 +16,6 @@ import { renderStatusBadge as renderStatusBadgeUtil, getApprovalLevel as getAppr
 import ApprovalWorkflowModal from "../../components/leaves/ApprovalWorkflowModal";
 import { useLeaveFilters } from "../../hooks/useLeaveFilters";
 import { useTeamLeaveRequestHandlers } from "../../hooks/useTeamLeaveRequestHandlers";
-import { getUserById } from "../../services/userService";
 
 const TeamLeavesPage: React.FC = () => {
   const { user } = useAuth();
@@ -51,9 +50,23 @@ const TeamLeavesPage: React.FC = () => {
     return getApprovalLevelUtil(userRole, hasCustomAdminRole);
   };
   
-  // Store user roles that we've already fetched to avoid redundant API calls
-  const [userRoles, setUserRoles] = useState<Record<string, string>>({});
-  
+  // Check if the current user can approve a specific leave request using the shared utility
+  const canApproveRequest = (request: LeaveRequest) => {
+    // We need to get the user role from a different source since request.user doesn't have role
+    // We can use the userId to determine if this is a special role user, or pass undefined
+    // which will make the utility function use default approval logic
+    const requestUserRole = undefined; // We don't have access to the role from request.user
+    
+    console.log('Checking approval eligibility in TeamLeavesPage:', {
+      userRole,
+      requestUserId: request.user?.id,
+      requestStatus: request.status,
+      metadata: request.metadata
+    });
+    
+    return canApproveRequestUtil(userRole, hasCustomAdminRole, request.status, request.metadata, requestUserRole);
+  };
+
   // Check if user has permission to view team leaves
   const hasTeamLeavePermission = 
     user?.role === "manager" || 
@@ -93,81 +106,6 @@ const TeamLeavesPage: React.FC = () => {
     enabled: hasTeamLeavePermission, // Only run query if user has permission
     retry: 1,
   });
-  
-  // Get appropriate text for the approval button based on user roles and hierarchy
-  const getApprovalButtonText = (request: LeaveRequest): string => {
-    const requestUserRole = request.user?.id ? userRoles[request.user.id] : undefined;
-    
-    // Default text if we can't determine the specific role relationship
-    let buttonText = `Approve/Reject`;
-    
-    if (requestUserRole) {
-      // Determine the appropriate approval text based on the hierarchy
-      if (requestUserRole === "employee" && userRole === "team_lead") {
-        buttonText = "Approve/Reject as Team Lead";
-      } else if (requestUserRole === "team_lead" && userRole === "manager") {
-        buttonText = "Approve/Reject as Manager";
-      } else if (requestUserRole === "manager" && userRole === "hr") {
-        buttonText = "Approve/Reject as HR";
-      } else if ((requestUserRole === "hr" || requestUserRole === "employee") && 
-                (userRole === "admin" || userRole === "super_admin" || hasCustomAdminRole)) {
-        buttonText = "Approve/Reject as Admin";
-      } else if (requestUserRole === "employee" && userRole === "manager") {
-        buttonText = "Approve/Reject as Manager";
-      } else if (requestUserRole === "employee" && userRole === "hr") {
-        buttonText = "Approve/Reject as HR";
-      }
-    }
-    
-    return buttonText;
-  };
-  
-  // Check if the current user can approve a specific leave request using the shared utility
-  const canApproveRequest = (request: LeaveRequest) => {
-    // Get the request user's role from our cached roles if available
-    const requestUserRole = request.user?.id ? userRoles[request.user.id] : undefined;
-    
-    console.log('Checking approval eligibility in TeamLeavesPage:', {
-      userRole,
-      requestUserId: request.user?.id,
-      requestUserRole,
-      requestStatus: request.status,
-      metadata: request.metadata
-    });
-    
-    return canApproveRequestUtil(userRole, hasCustomAdminRole, request.status, request.metadata, requestUserRole);
-  };
-  
-  // Fetch user roles for all leave requests
-  useEffect(() => {
-    if (!data?.leaveRequests || data.leaveRequests.length === 0) return;
-    
-    const fetchUserRoles = async () => {
-      const newUserRoles: Record<string, string> = { ...userRoles };
-      const userIdsToFetch = data.leaveRequests
-        .filter(req => req.user?.id && !userRoles[req.user.id])
-        .map(req => req.user?.id as string);
-      
-      // If we already have all the roles, don't make any API calls
-      if (userIdsToFetch.length === 0) return;
-      
-      // Fetch roles for each user
-      for (const userId of userIdsToFetch) {
-        try {
-          const userData = await getUserById(userId);
-          if (userData && userData.role) {
-            newUserRoles[userId] = userData.role;
-          }
-        } catch (error) {
-          console.error(`Error fetching user role for user ${userId}:`, error);
-        }
-      }
-      
-      setUserRoles(newUserRoles);
-    };
-    
-    fetchUserRoles();
-  }, [data?.leaveRequests]);
   
   // Use the shared handlers hook
   const {
@@ -380,7 +318,7 @@ const TeamLeavesPage: React.FC = () => {
                                 ? "Review Deletion" 
                                 : request.status === "partially_approved" 
                                   ? `Approve/Reject as Step ${(request.metadata?.currentApprovalLevel || 0) + 1}` 
-                                  : getApprovalButtonText(request)}
+                                  : `Approve/Reject as Step ${getApprovalLevel()}`}
                             </Button>
                           ) : (
                             <Button
