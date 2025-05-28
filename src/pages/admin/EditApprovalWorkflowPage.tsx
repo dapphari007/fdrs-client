@@ -32,7 +32,7 @@ export default function EditApprovalWorkflowPage() {
   const navigate = useNavigate();
   const [error, setError] = useState<React.ReactNode | null>(null);
 
-  const { data: workflow, isLoading: isLoadingWorkflow, isError: isWorkflowError } = useQuery({
+  const { data: workflow, isLoading: isLoadingWorkflow, isError: isWorkflowError, error: workflowError } = useQuery({
     queryKey: ["approvalWorkflow", id],
     queryFn: () => getApprovalWorkflowById(id as string),
     enabled: !!id,
@@ -369,10 +369,14 @@ export default function EditApprovalWorkflowPage() {
   }
 
   if ((!workflow && !isLoadingWorkflow) || isWorkflowError) {
+    const errorMessage = workflowError instanceof Error 
+      ? workflowError.message 
+      : "Workflow not found or you don't have permission to view it.";
+      
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          Workflow not found or you don't have permission to view it.
+          {errorMessage}
           <p className="text-sm mt-2">
             This could be due to an invalid workflow ID or insufficient permissions.
           </p>

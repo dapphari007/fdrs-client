@@ -57,11 +57,27 @@ export const getApprovalWorkflowById = async (id: string) => {
     console.log(`Fetching approval workflow with ID: ${id}`);
     const response = await api.get(`/approval-workflows/${id}`);
     console.log('Approval workflow response:', response.data);
+    
+    if (!response.data.approvalWorkflow) {
+      throw new Error('Workflow not found or you don\'t have permission to view it.');
+    }
+    
     return response.data.approvalWorkflow;
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Error fetching approval workflow with ID ${id}:`, error);
-    // Return null instead of throwing to prevent UI errors
-    return null;
+    
+    // Provide more detailed error messages
+    if (error.response?.status === 404) {
+      throw new Error('Workflow not found. It may have been deleted or you may not have permission to access it.');
+    } else if (error.response?.status === 403) {
+      throw new Error('You do not have permission to view this workflow.');
+    } else if (error.response?.data?.message) {
+      throw new Error(`Failed to fetch workflow: ${error.response.data.message}`);
+    } else if (error.message) {
+      throw new Error(error.message);
+    }
+    
+    throw new Error('Failed to fetch workflow. Please try again later.');
   }
 };
 
