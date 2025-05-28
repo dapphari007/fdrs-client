@@ -136,6 +136,27 @@ export const canApproveRequest = (
       const firstRequiredLevel = Math.min(...metadata.requiredApprovalLevels);
       console.log(`First required approval level: ${firstRequiredLevel}, user level: ${userApprovalLevel}`);
       
+      // Check for special cases based on the request user's role
+      if (metadata.requestUserRole) {
+        // If request is from a Manager and approver is HR
+        if (metadata.requestUserRole === 'manager' && userRole === 'hr') {
+          console.log('HR can approve manager request');
+          return true;
+        }
+        
+        // If request is from HR and approver is Super Admin
+        if (metadata.requestUserRole === 'hr' && userRole === 'super_admin') {
+          console.log('Super Admin can approve HR request');
+          return true;
+        }
+        
+        // If request is from a Team Lead and approver is a Manager
+        if (metadata.requestUserRole === 'team_lead' && userRole === 'manager') {
+          console.log('Manager can approve team lead request');
+          return true;
+        }
+      }
+      
       // User can approve if their level matches the first required level
       const canApprove = userApprovalLevel === firstRequiredLevel;
       
@@ -181,13 +202,35 @@ export const canApproveRequest = (
         currentApprovalLevel,
         nextRequiredLevel,
         requiredLevels: sortedLevels,
-        userApprovalLevel
+        userApprovalLevel,
+        requestUserRole: metadata.requestUserRole
       });
       
       // If there's no next level, the request is fully approved at all required levels
       if (!nextRequiredLevel) {
         console.log('No next level required, request is fully approved at all required levels');
         return false;
+      }
+      
+      // Check for special cases based on the request user's role
+      if (metadata.requestUserRole) {
+        // If request is from a Manager and approver is HR
+        if (metadata.requestUserRole === 'manager' && userRole === 'hr') {
+          console.log('HR can approve manager request in partially approved state');
+          return true;
+        }
+        
+        // If request is from HR and approver is Super Admin
+        if (metadata.requestUserRole === 'hr' && userRole === 'super_admin') {
+          console.log('Super Admin can approve HR request in partially approved state');
+          return true;
+        }
+        
+        // If request is from a Team Lead and approver is a Manager
+        if (metadata.requestUserRole === 'team_lead' && userRole === 'manager') {
+          console.log('Manager can approve team lead request in partially approved state');
+          return true;
+        }
       }
       
       // User can approve only if their level exactly matches the next required level
@@ -208,8 +251,30 @@ export const canApproveRequest = (
         userRole,
         currentApprovalLevel,
         nextRequiredLevel,
-        userApprovalLevel
+        userApprovalLevel,
+        requestUserRole: metadata.requestUserRole
       });
+      
+      // Check for special cases based on the request user's role
+      if (metadata.requestUserRole) {
+        // If request is from a Manager and approver is HR
+        if (metadata.requestUserRole === 'manager' && userRole === 'hr') {
+          console.log('HR can approve manager request in default workflow');
+          return true;
+        }
+        
+        // If request is from HR and approver is Super Admin
+        if (metadata.requestUserRole === 'hr' && userRole === 'super_admin') {
+          console.log('Super Admin can approve HR request in default workflow');
+          return true;
+        }
+        
+        // If request is from a Team Lead and approver is a Manager
+        if (metadata.requestUserRole === 'team_lead' && userRole === 'manager') {
+          console.log('Manager can approve team lead request in default workflow');
+          return true;
+        }
+      }
       
       // User can approve only if their level exactly matches the next required level
       const canApprove = userApprovalLevel === nextRequiredLevel;
