@@ -1,5 +1,6 @@
 import { get, post, put } from "./api";
 import { ApiResponse, CreateLeaveTypeData, LeaveType } from "../types";
+import config from "../config";
 
 export interface GetLeaveTypesParams {
   isActive?: boolean;
@@ -27,6 +28,8 @@ export const getLeaveType = async (
 ): Promise<ApiResponse<LeaveType>> => {
   try {
     console.log(`Fetching leave type with ID: ${id}`);
+    // Add debugging to see the full URL being requested
+    console.log(`Making request to: ${window.location.origin}${config.apiUrl}/leave-types/${id}`);
     const response = await get<ApiResponse<LeaveType>>(`/leave-types/${id}`);
     console.log('Leave type response:', response);
     
