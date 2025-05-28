@@ -10,6 +10,7 @@ import {
 } from "../../services/approvalWorkflowService";
 import { useAuth } from "../../context/AuthContext";
 import Alert from "../../components/ui/Alert";
+import { Tab } from "@headlessui/react";
 
 interface ApprovalWorkflowsPageProps {
   isTabContent?: boolean;
@@ -21,18 +22,29 @@ export default function ApprovalWorkflowsPage({ isTabContent = false }: Approval
   const [workflowToToggle, setWorkflowToToggle] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [selectedRoleTab, setSelectedRoleTab] = useState(0);
   
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'super_admin';
   const queryClient = useQueryClient();
+
+  // Define role tabs for filtering
+  const roleTabs = [
+    { name: "All Workflows", roles: [] },
+    { name: "Team Lead", roles: ["team_lead"] },
+    { name: "Manager", roles: ["manager"] },
+    { name: "HR", roles: ["hr"] }
+  ];
 
   const {
     data: workflows = [],
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["approvalWorkflows"],
-    queryFn: () => getAllApprovalWorkflows(),
+    queryKey: ["approvalWorkflows", selectedRoleTab],
+    queryFn: () => getAllApprovalWorkflows({ 
+      roles: roleTabs[selectedRoleTab].roles
+    }),
   });
 
   const deleteMutation = useMutation({
@@ -167,16 +179,91 @@ export default function ApprovalWorkflowsPage({ isTabContent = false }: Approval
           default workflows available in the system.
         </p>
       </div>
+      
+      {/* Role-based tabs - Only show for super admin */}
+      {isSuperAdmin && (
+        <div className="mb-6">
+          <Tab.Group selectedIndex={selectedRoleTab} onChange={setSelectedRoleTab}>
+            <Tab.List className="flex space-x-1 rounded-xl bg-blue-900/10 p-1">
+              {roleTabs.map((tab) => (
+                <Tab
+                  key={tab.name}
+                  className={({ selected }) =>
+                    `w-full rounded-lg py-2.5 text-sm font-medium leading-5 
+                    ${
+                      selected
+                        ? 'bg-white text-blue-700 shadow'
+                        : 'text-gray-600 hover:bg-white/[0.12] hover:text-blue-600'
+                    }`
+                  }
+                >
+                  {tab.name}
+                </Tab>
+              ))}
+            </Tab.List>
+          </Tab.Group>
+          
+          <div className="mt-3">
+            {selectedRoleTab > 0 && (
+              <div className="bg-white border border-gray-200 rounded-md p-4 mt-2">
+                <h3 className="font-medium text-gray-800 mb-2">{roleTabs[selectedRoleTab].name} Role Workflows</h3>
+                <p className="text-sm text-gray-600">
+                  Showing workflows that include {roleTabs[selectedRoleTab].name} role in their approval process.
+                </p>
+                
+                {selectedRoleTab === 1 && (
+                  <p className="text-sm text-gray-600 mt-2">
+                    <span className="font-medium">Team Lead:</span> Typically approves leave requests from team members before they are escalated to higher management.
+                  </p>
+                )}
+                
+                {selectedRoleTab === 2 && (
+                  <p className="text-sm text-gray-600 mt-2">
+                    <span className="font-medium">Manager:</span> Reviews leave requests that have been approved by Team Leads or directly submitted by employees without Team Leads.
+                  </p>
+                )}
+                
+                {selectedRoleTab === 3 && (
+                  <p className="text-sm text-gray-600 mt-2">
+                    <span className="font-medium">HR:</span> Usually involved in the final approval stage, especially for longer leave durations or special leave types.
+                  </p>
+                )}
+                
+                <p className="text-sm text-gray-600 mt-2">
+                  Total workflows with this role: <span className="font-medium">{workflows.length}</span>
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {workflows.length === 0 ? (
         <div className="bg-gray-50 p-6 rounded-lg text-center">
-          <p className="text-gray-600">No approval workflows found.</p>
-          <Link
-            to="/approval-workflows/create"
-            className="text-blue-600 hover:underline mt-2 inline-block"
-          >
-            Create your first workflow
-          </Link>
+          {selectedRoleTab > 0 ? (
+            <div>
+              <p className="text-gray-600">No approval workflows found for {roleTabs[selectedRoleTab].name} role.</p>
+              <p className="text-sm text-gray-500 mt-2">
+                Try selecting a different role or create a new workflow that includes this role.
+              </p>
+              <Link
+                to="/approval-workflows/create"
+                className="text-blue-600 hover:underline mt-2 inline-block"
+              >
+                Create new workflow
+              </Link>
+            </div>
+          ) : (
+            <div>
+              <p className="text-gray-600">No approval workflows found.</p>
+              <Link
+                to="/approval-workflows/create"
+                className="text-blue-600 hover:underline mt-2 inline-block"
+              >
+                Create your first workflow
+              </Link>
+            </div>
+          )}
         </div>
       ) : (
         <div className="overflow-x-auto">
@@ -186,6 +273,9 @@ export default function ApprovalWorkflowsPage({ isTabContent = false }: Approval
                 <th className="py-3 px-4 text-left">Name</th>
                 <th className="py-3 px-4 text-left">Days Range</th>
                 <th className="py-3 px-4 text-left">Approval Steps Count</th>
+                {selectedRoleTab > 0 && isSuperAdmin && (
+                  <th className="py-3 px-4 text-left">Role Involvement</th>
+                )}
                 <th className="py-3 px-4 text-left">Status</th>
                 <th className="py-3 px-4 text-left">Created At</th>
                 <th className="py-3 px-4 text-left">Actions</th>
@@ -206,6 +296,27 @@ export default function ApprovalWorkflowsPage({ isTabContent = false }: Approval
                       ? workflow.approvalLevels.length
                       : 0}
                   </td>
+                  {selectedRoleTab > 0 && isSuperAdmin && (
+                    <td className="py-3 px-4">
+                      {workflow.approvalLevels
+                        .filter(level => level.roles?.some(role => 
+                          roleTabs[selectedRoleTab].roles.includes(role)
+                        ))
+                        .map(level => (
+                          <div key={level.level} className="mb-1">
+                            <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mr-1">
+                              Level {level.level}
+                            </span>
+                            {level.approverType ? 
+                              <span className="text-xs text-gray-600">({level.approverType})</span> : 
+                              <span className="text-xs text-gray-600">
+                                ({level.roles?.join(', ')})
+                              </span>
+                            }
+                          </div>
+                        ))}
+                    </td>
+                  )}
                   <td className="py-3 px-4">
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
                       workflow.isActive 

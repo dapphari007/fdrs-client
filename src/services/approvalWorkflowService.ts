@@ -29,7 +29,7 @@ export const createApprovalWorkflow = async (
   return response.data;
 };
 
-export const getAllApprovalWorkflows = async (filters?: { isActive?: boolean, categoryId?: string }) => {
+export const getAllApprovalWorkflows = async (filters?: { isActive?: boolean, categoryId?: string, roles?: string[] }) => {
   try {
     const params = new URLSearchParams();
     if (filters?.isActive !== undefined) {
@@ -44,7 +44,19 @@ export const getAllApprovalWorkflows = async (filters?: { isActive?: boolean, ca
     
     const response = await api.get(`/approval-workflows${queryString}`);
     console.log('All approval workflows response:', response.data);
-    return response.data.approvalWorkflows || [];
+    
+    let workflows = response.data.approvalWorkflows || [];
+    
+    // Client-side filtering for roles if specified
+    if (filters?.roles && filters.roles.length > 0) {
+      workflows = workflows.filter((workflow: ApprovalWorkflow) => 
+        workflow.approvalLevels.some(level => 
+          level.roles?.some(role => filters.roles?.includes(role))
+        )
+      );
+    }
+    
+    return workflows;
   } catch (error) {
     console.error('Error fetching all approval workflows:', error);
     // Return empty array instead of throwing to prevent UI errors
