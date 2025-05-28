@@ -60,35 +60,70 @@ const TeamLeavesPage: React.FC = () => {
     // Get the current user's approval level
     const userApprovalLevel = getApprovalLevel();
     
-    // For pending requests without metadata, check if the user has appropriate approval level
-    if (request.status === 'pending' && (!request.metadata || !request.metadata.currentApprovalLevel)) {
+    // For pending requests, check if the user's level matches the required first level
+    if (request.status === 'pending') {
       // Log for debugging
       console.log('Checking initial approval for pending request:', {
         userRole,
         userApprovalLevel,
-        requestStatus: request.status
+        requestStatus: request.status,
+        metadata: request.metadata
       });
       
-      // For initial approval, any user with approval level > 0 can approve
-      return userApprovalLevel > 0;
+      // If there's a custom approval workflow defined
+      if (request.metadata && request.metadata.requiredApprovalLevels && request.metadata.requiredApprovalLevels.length > 0) {
+        // Get the first required approval level
+        const firstRequiredLevel = Math.min(...request.metadata.requiredApprovalLevels);
+        console.log(`First required approval level: ${firstRequiredLevel}, user level: ${userApprovalLevel}`);
+        
+        // User can approve if their level matches the first required level
+        return userApprovalLevel === firstRequiredLevel;
+      } else {
+        // If no custom workflow, only users with approval level 1 (team leads) can approve initial requests
+        return userApprovalLevel === 1;
+      }
     }
     
     // For partially approved requests, check if the user's level matches the next required level
     if (request.status === 'partially_approved' && request.metadata) {
       const currentApprovalLevel = request.metadata.currentApprovalLevel || 0;
-      const nextRequiredLevel = currentApprovalLevel + 1;
       
-      // Log for debugging
-      console.log('Checking next level approval for partially approved request:', {
-        userRole,
-        userApprovalLevel,
-        currentApprovalLevel,
-        nextRequiredLevel,
-        requestStatus: request.status
-      });
-      
-      // User can approve if their level matches the next required level
-      return userApprovalLevel === nextRequiredLevel;
+      // If there's a custom approval workflow defined
+      if (request.metadata.requiredApprovalLevels && request.metadata.requiredApprovalLevels.length > 0) {
+        // Sort the required levels to ensure they're in ascending order
+        const sortedLevels = [...request.metadata.requiredApprovalLevels].sort((a, b) => a - b);
+        
+        // Find the next required level in the workflow
+        const nextRequiredLevel = sortedLevels.find(level => level > currentApprovalLevel);
+        
+        // Log for debugging
+        console.log('Checking next level approval for partially approved request:', {
+          userRole,
+          userApprovalLevel,
+          currentApprovalLevel,
+          nextRequiredLevel,
+          requiredLevels: sortedLevels,
+          requestStatus: request.status
+        });
+        
+        // User can approve if their level matches the next required level
+        return userApprovalLevel === nextRequiredLevel;
+      } else {
+        // If no custom workflow, use the default sequential workflow
+        const nextRequiredLevel = currentApprovalLevel + 1;
+        
+        // Log for debugging
+        console.log('Using default sequential workflow for partially approved request:', {
+          userRole,
+          userApprovalLevel,
+          currentApprovalLevel,
+          nextRequiredLevel,
+          requestStatus: request.status
+        });
+        
+        // User can approve if their level matches the next required level
+        return userApprovalLevel === nextRequiredLevel;
+      }
     }
     
     // For pending deletion requests, admins and super admins can approve
@@ -349,9 +384,11 @@ const TeamLeavesPage: React.FC = () => {
                             >
                               {request.status === "pending_deletion" 
                                 ? "Review Deletion" 
-                                : request.status === "partially_approved" 
+                                : request.status === "partially_approved" && request.metadata?.requiredApprovalLevels
                                   ? `Approve/Reject as Step ${(request.metadata?.currentApprovalLevel || 0) + 1}` 
-                                  : `Approve/Reject as Step ${getApprovalLevel()}`}
+                                  : request.status === "pending" && request.metadata?.requiredApprovalLevels
+                                    ? `Approve/Reject as Step 1`
+                                    : "Approve/Reject"}
                             </Button>
                           ) : (
                             <Button

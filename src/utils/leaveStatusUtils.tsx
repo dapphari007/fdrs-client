@@ -127,41 +127,95 @@ export const canApproveRequest = (
   }
   
   // For initial pending requests (no approval history yet)
-  if (requestStatus === "pending" && (!metadata || !metadata.currentApprovalLevel)) {
+  if (requestStatus === "pending") {
     console.log(`Processing initial pending request by ${userRole} with level ${userApprovalLevel}`);
     
-    // Only team leads can approve initial pending requests
-    if (isTeamLead) {
-      console.log('Team lead can approve initial pending request');
-      return true;
+    // If there's a custom approval workflow defined
+    if (metadata && metadata.requiredApprovalLevels && metadata.requiredApprovalLevels.length > 0) {
+      // Get the first required approval level
+      const firstRequiredLevel = Math.min(...metadata.requiredApprovalLevels);
+      console.log(`First required approval level: ${firstRequiredLevel}, user level: ${userApprovalLevel}`);
+      
+      // User can approve if their level matches the first required level
+      const canApprove = userApprovalLevel === firstRequiredLevel;
+      
+      if (canApprove) {
+        console.log(`User with role ${userRole} can approve as their level ${userApprovalLevel} matches the first required level ${firstRequiredLevel}`);
+      } else {
+        console.log(`User with role ${userRole} cannot approve as their level ${userApprovalLevel} does not match the first required level ${firstRequiredLevel}`);
+      }
+      
+      return canApprove;
+    } else {
+      // If no custom workflow, only team leads can approve initial requests
+      if (isTeamLead) {
+        console.log('Team lead can approve initial pending request');
+        return true;
+      }
+      
+      console.log('Only team leads can approve initial pending requests');
+      return false;
     }
-    
-    console.log('Only team leads can approve initial pending requests');
-    return false;
   }
   
   // For partially approved requests, strictly enforce the approval hierarchy
-  if ((requestStatus === "partially_approved" || requestStatus === "pending") && metadata) {
+  if (requestStatus === "partially_approved" && metadata) {
     const currentApprovalLevel = metadata.currentApprovalLevel || 0;
-    const nextRequiredLevel = currentApprovalLevel + 1;
     
-    console.log(`Processing partially approved request:`, {
-      userRole,
-      currentApprovalLevel,
-      nextRequiredLevel,
-      userApprovalLevel
-    });
-    
-    // User can approve only if their level exactly matches the next required level
-    const canApprove = userApprovalLevel === nextRequiredLevel;
-    
-    if (canApprove) {
-      console.log(`User with role ${userRole} can approve as their level ${userApprovalLevel} matches the required next level ${nextRequiredLevel}`);
+    // If there's a custom approval workflow defined
+    if (metadata.requiredApprovalLevels && metadata.requiredApprovalLevels.length > 0) {
+      // Sort the required levels to ensure they're in ascending order
+      const sortedLevels = [...metadata.requiredApprovalLevels].sort((a, b) => a - b);
+      
+      // Find the next required level in the workflow
+      const nextRequiredLevel = sortedLevels.find(level => level > currentApprovalLevel);
+      
+      console.log(`Processing partially approved request with custom workflow:`, {
+        userRole,
+        currentApprovalLevel,
+        nextRequiredLevel,
+        requiredLevels: sortedLevels,
+        userApprovalLevel
+      });
+      
+      // If there's no next level, the request is fully approved at all required levels
+      if (!nextRequiredLevel) {
+        console.log('No next level required, request is fully approved at all required levels');
+        return false;
+      }
+      
+      // User can approve only if their level exactly matches the next required level
+      const canApprove = userApprovalLevel === nextRequiredLevel;
+      
+      if (canApprove) {
+        console.log(`User with role ${userRole} can approve as their level ${userApprovalLevel} matches the required next level ${nextRequiredLevel}`);
+      } else {
+        console.log(`User with role ${userRole} cannot approve as their level ${userApprovalLevel} does not match the required next level ${nextRequiredLevel}`);
+      }
+      
+      return canApprove;
     } else {
-      console.log(`User with role ${userRole} cannot approve as their level ${userApprovalLevel} does not match the required next level ${nextRequiredLevel}`);
+      // If no custom workflow, use the default sequential workflow
+      const nextRequiredLevel = currentApprovalLevel + 1;
+      
+      console.log(`Processing partially approved request with default workflow:`, {
+        userRole,
+        currentApprovalLevel,
+        nextRequiredLevel,
+        userApprovalLevel
+      });
+      
+      // User can approve only if their level exactly matches the next required level
+      const canApprove = userApprovalLevel === nextRequiredLevel;
+      
+      if (canApprove) {
+        console.log(`User with role ${userRole} can approve as their level ${userApprovalLevel} matches the required next level ${nextRequiredLevel}`);
+      } else {
+        console.log(`User with role ${userRole} cannot approve as their level ${userApprovalLevel} does not match the required next level ${nextRequiredLevel}`);
+      }
+      
+      return canApprove;
     }
-    
-    return canApprove;
   }
   
   console.log('No approval condition met');
