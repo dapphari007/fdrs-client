@@ -38,10 +38,14 @@ export default function ViewLeaveRequestPage() {
   
   // Check if current user is eligible to approve at the next level in the workflow
   const canApproveRequest = useMemo(() => {
-    if (!leaveRequest || !leaveRequest.user) return false;
+    if (!leaveRequest || !leaveRequest.user) {
+      console.log('No leave request or user data available');
+      return false;
+    }
     
     // First check if this is the user's own request - users shouldn't approve their own requests
     if (user?.id === leaveRequest.userId) {
+      console.log('User cannot approve their own request');
       return false;
     }
     
@@ -53,17 +57,26 @@ export default function ViewLeaveRequestPage() {
       requestUserRole,
       requestStatus: leaveRequest.status,
       metadata: leaveRequest.metadata,
-      isOwnRequest: user?.id === leaveRequest.userId
+      isOwnRequest: user?.id === leaveRequest.userId,
+      isTeamLead
     });
     
-    return canApproveRequestUtil(
+    // Team leads should always be able to approve pending requests
+    if (isTeamLead && leaveRequest.status === 'pending') {
+      console.log('Team lead can approve pending request');
+      return true;
+    }
+    
+    const canApprove = canApproveRequestUtil(
       user?.role || '', 
       hasCustomAdminRole,
       leaveRequest.status,
-      leaveRequest.metadata,
-      requestUserRole
+      leaveRequest.metadata
     );
-  }, [user, leaveRequest]);
+    
+    console.log(`canApproveRequestUtil returned: ${canApprove}`);
+    return canApprove;
+  }, [user, leaveRequest, isTeamLead]);
 
   useEffect(() => {
     const fetchLeaveRequest = async () => {
@@ -373,6 +386,32 @@ export default function ViewLeaveRequestPage() {
             </div>
           )}
 
+          {/* Debug information - Always visible */}
+          <div className="border-t border-gray-200 pt-6 mt-6">
+            <h3 className="text-lg font-medium mb-4">Debug Information</h3>
+            <div className="bg-gray-100 p-4 rounded-md mb-4 text-xs">
+              <p><strong>Debug Info:</strong></p>
+              <p>User Role: {user?.role}</p>
+              <p>User Approval Level: L{getApprovalLevel()}</p>
+              <p>Request Status: {leaveRequest?.status}</p>
+              <p>Request User Role: {leaveRequest?.user?.role}</p>
+              <p>Is Team Lead: {isTeamLead ? 'Yes' : 'No'}</p>
+              <p>Is Manager: {isManager ? 'Yes' : 'No'}</p>
+              <p>Is HR: {isHR ? 'Yes' : 'No'}</p>
+              <p>Is Super Admin: {isSuperAdmin ? 'Yes' : 'No'}</p>
+              <p>Is Partially Approved: {isPartiallyApproved ? 'Yes' : 'No'}</p>
+              <p>Can Approve Request: {canApproveRequest ? 'Yes' : 'No'}</p>
+              <p>Is Own Request: {isOwnRequest ? 'Yes' : 'No'}</p>
+              {leaveRequest?.metadata && (
+                <>
+                  <p>Current Approval Step: {leaveRequest.metadata.currentApprovalLevel}</p>
+                  <p>Next Required Step: {leaveRequest.metadata.currentApprovalLevel + 1}</p>
+                  <p>Required Approval Steps: {JSON.stringify(leaveRequest.metadata.requiredApprovalLevels)}</p>
+                </>
+              )}
+            </div>
+          </div>
+
           {/* Approval Actions */}
           {!isOwnRequest && canApproveRequest && (
             <div className="border-t border-gray-200 pt-6 mt-6">
@@ -393,29 +432,6 @@ export default function ViewLeaveRequestPage() {
                   </p>
                 </div>
               )}
-              
-              {/* Debug information */}
-              <div className="bg-gray-100 p-4 rounded-md mb-4 text-xs">
-                <p><strong>Debug Info:</strong></p>
-                <p>User Role: {user?.role}</p>
-                <p>User Approval Level: L{getApprovalLevel()}</p>
-                <p>Request Status: {leaveRequest?.status}</p>
-                <p>Request User Role: {leaveRequest?.user?.role}</p>
-                <p>Is Team Lead: {isTeamLead ? 'Yes' : 'No'}</p>
-                <p>Is Manager: {isManager ? 'Yes' : 'No'}</p>
-                <p>Is HR: {isHR ? 'Yes' : 'No'}</p>
-                <p>Is Super Admin: {isSuperAdmin ? 'Yes' : 'No'}</p>
-                <p>Is Partially Approved: {isPartiallyApproved ? 'Yes' : 'No'}</p>
-                <p>Can Approve Request: {canApproveRequest ? 'Yes' : 'No'}</p>
-                <p>Is Own Request: {isOwnRequest ? 'Yes' : 'No'}</p>
-                {leaveRequest?.metadata && (
-                  <>
-                    <p>Current Approval Step: {leaveRequest.metadata.currentApprovalLevel}</p>
-                    <p>Next Required Step: {leaveRequest.metadata.currentApprovalLevel + 1}</p>
-                    <p>Required Approval Steps: {JSON.stringify(leaveRequest.metadata.requiredApprovalLevels)}</p>
-                  </>
-                )}
-              </div>
 
               <div className="mb-4">
                 <label className="block text-gray-700 text-sm font-bold mb-2">

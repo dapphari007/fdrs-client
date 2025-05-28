@@ -57,60 +57,47 @@ const TeamLeavesPage: React.FC = () => {
       return false;
     }
     
-    // Determine the role of the user who made the request
-    // This helps ensure proper workflow (e.g., Team Lead requests go to Manager, not other Team Leads)
-    // Note: role is not directly available in the user object from LeaveRequest type
-    // so we'll determine it based on position
-    let requestUserRole: string | undefined;
+    // Get the current user's approval level
+    const userApprovalLevel = getApprovalLevel();
     
-    // Try to determine role based on position
-    if (request.user?.position) {
-      const position = request.user.position.toLowerCase();
-      if (position.includes('team lead')) {
-        requestUserRole = 'team_lead';
-      } else if (position.includes('manager')) {
-        requestUserRole = 'manager';
-      } else if (position.includes('hr')) {
-        requestUserRole = 'hr';
-      } else {
-        // Default to employee if no specific role is detected
-        requestUserRole = 'employee';
-      }
+    // For pending requests without metadata, check if the user has appropriate approval level
+    if (request.status === 'pending' && (!request.metadata || !request.metadata.currentApprovalLevel)) {
+      // Log for debugging
+      console.log('Checking initial approval for pending request:', {
+        userRole,
+        userApprovalLevel,
+        requestStatus: request.status
+      });
       
-      console.log('Position detected:', position, 'Role assigned:', requestUserRole);
-    } else {
-      // If no position is available, default to employee
-      requestUserRole = 'employee';
-      console.log('No position available, defaulting to employee role');
+      // For initial approval, any user with approval level > 0 can approve
+      return userApprovalLevel > 0;
     }
     
-    console.log('Request user role determined as:', requestUserRole);
-    
-    console.log('Checking approval eligibility in TeamLeavesPage:', {
-      userRole,
-      requestUserId: request.user?.id,
-      requestUserName: `${request.user?.firstName} ${request.user?.lastName}`,
-      requestUserPosition: request.user?.position,
-      requestUserRole,
-      requestStatus: request.status,
-      metadata: request.metadata,
-      isOwnRequest: user?.id === request.userId
-    });
-    
-    // Special case for managers approving team lead requests
-    if (userRole === 'manager' && requestUserRole === 'team_lead') {
-      console.log('SPECIAL CASE: Manager should be able to approve Team Lead request');
+    // For partially approved requests, check if the user's level matches the next required level
+    if (request.status === 'partially_approved' && request.metadata) {
+      const currentApprovalLevel = request.metadata.currentApprovalLevel || 0;
+      const nextRequiredLevel = currentApprovalLevel + 1;
+      
+      // Log for debugging
+      console.log('Checking next level approval for partially approved request:', {
+        userRole,
+        userApprovalLevel,
+        currentApprovalLevel,
+        nextRequiredLevel,
+        requestStatus: request.status
+      });
+      
+      // User can approve if their level matches the next required level
+      return userApprovalLevel === nextRequiredLevel;
     }
     
-    // Special case for managers approving team lead requests
-    if (userRole === 'manager' && requestUserRole === 'team_lead' && 
-        (request.status === 'pending' || request.status === 'partially_approved')) {
-      console.log('Manager can approve team lead request - special case override');
-      return true;
+    // For pending deletion requests, admins and super admins can approve
+    if (request.status === 'pending_deletion') {
+      return userRole === 'admin' || userRole === 'super_admin' || hasCustomAdminRole;
     }
     
-    // Use the utility function for all other cases
-    return canApproveRequestUtil(userRole, hasCustomAdminRole, request.status, request.metadata, requestUserRole);
+    // Default to the utility function for any other cases
+    return canApproveRequestUtil(userRole, hasCustomAdminRole, request.status, request.metadata);
   };
 
   // Check if user has permission to view team leaves
