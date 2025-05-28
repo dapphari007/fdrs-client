@@ -6,7 +6,17 @@ console.log("Environment variables:", {
   PROD: import.meta.env.PROD,
 });
 
-const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
+// Get the base API URL from environment variables
+let baseApiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
+
+// Remove trailing slash if present
+if (baseApiUrl.endsWith('/')) {
+  baseApiUrl = baseApiUrl.slice(0, -1);
+}
+
+// Ensure we don't have duplicate /api in the URL
+const apiUrl = baseApiUrl.endsWith('/api') ? baseApiUrl : `${baseApiUrl}/api`;
+
 console.log("Using API URL:", apiUrl);
 
 const config = {
