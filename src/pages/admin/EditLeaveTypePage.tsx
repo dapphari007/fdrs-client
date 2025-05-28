@@ -168,11 +168,15 @@ export default function EditLeaveTypePage() {
     );
   }
 
-  if (!leaveType && !isLoadingLeaveType) {
+  if ((!leaveType && !isLoadingLeaveType) || isError) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          Leave type not found or you don't have permission to view it.
+          <p className="font-bold">Leave type not found or you don't have permission to view it.</p>
+          <p className="text-sm mt-2">
+            This could be due to an invalid leave type ID or insufficient permissions.
+            Please check the URL and try again, or contact your administrator.
+          </p>
         </div>
         <button
           onClick={() => navigate("/leave-types")}

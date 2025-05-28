@@ -25,7 +25,25 @@ export const getLeaveTypes = async (
 export const getLeaveType = async (
   id: string
 ): Promise<ApiResponse<LeaveType>> => {
-  return get<ApiResponse<LeaveType>>(`/leave-types/${id}`);
+  try {
+    console.log(`Fetching leave type with ID: ${id}`);
+    const response = await get<ApiResponse<LeaveType>>(`/leave-types/${id}`);
+    console.log('Leave type response:', response);
+    return response;
+  } catch (error: any) {
+    console.error(`Error fetching leave type with ID ${id}:`, error);
+    
+    // If the leave type is not found, return a structured error response
+    // instead of throwing, to allow the UI to handle it gracefully
+    if (error.response?.status === 404) {
+      return {
+        leaveType: null,
+        message: "Leave type not found or you don't have permission to view it."
+      };
+    }
+    
+    throw error;
+  }
 };
 
 export const updateLeaveType = async (

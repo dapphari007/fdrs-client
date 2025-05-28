@@ -20,10 +20,12 @@ export const useLeaveType = (id: string | undefined) => {
         const response = await getLeaveType(id);
         console.log("Leave type API response:", response);
         
-        if (!response || !response.leaveType) {
-          throw new Error("Leave type not found or invalid response format");
+        // If the response contains a message but no leave type, it's likely a 404 that was handled gracefully
+        if (!response) {
+          throw new Error("Invalid response from server");
         }
         
+        // Even if leaveType is null, we return the response to allow the UI to handle it
         return response;
       } catch (error) {
         console.error("Error fetching leave type:", error);

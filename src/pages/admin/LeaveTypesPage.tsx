@@ -137,7 +137,7 @@ const LeaveTypesPage: React.FC = () => {
     const checkDatabaseFlushed = async () => {
       try {
         const response = await axios.get(
-          `${config.apiUrl}/api/leave-balances/check-flushed`
+          `${config.apiUrl}/leave-balances/check-flushed`
         );
         setIsDatabaseFlushed(response.data.isFlushed);
       } catch (err) {

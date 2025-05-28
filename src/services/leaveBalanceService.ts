@@ -181,14 +181,36 @@ export const checkLeaveTypeBalances = async (
 ): Promise<{ exists: boolean; count: number }> => {
   try {
     console.log(`Checking leave balances for leave type ${leaveTypeId} and year ${year}`);
+    
+    // Validate the leaveTypeId
+    if (!leaveTypeId) {
+      console.error("Invalid leave type ID provided:", leaveTypeId);
+      return { exists: false, count: 0 };
+    }
+    
+    const url = `/leave-balances/check-type/${leaveTypeId}`;
+    console.log("Making request to:", url, "with params:", { year });
+    
     const response = await get<{ exists: boolean; count: number }>(
-      `/leave-balances/check-type/${leaveTypeId}`,
+      url,
       { params: { year } }
     );
+    
     console.log("Check leave type balances response:", response);
     return response;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error checking leave type balances:", error);
+    
+    // Log more details about the error
+    if (error.response) {
+      console.error("Response status:", error.response.status);
+      console.error("Response data:", error.response.data);
+    } else if (error.request) {
+      console.error("No response received. Request:", error.request);
+    } else {
+      console.error("Error message:", error.message);
+    }
+    
     // Return a default response instead of throwing to prevent UI errors
     return { exists: false, count: 0 };
   }
