@@ -65,13 +65,23 @@ const TeamLeavesPage: React.FC = () => {
     
     // Try to determine role based on position
     if (request.user?.position) {
-      if (request.user.position.toLowerCase().includes('team lead')) {
+      const position = request.user.position.toLowerCase();
+      if (position.includes('team lead')) {
         requestUserRole = 'team_lead';
-      } else if (request.user.position.toLowerCase().includes('manager')) {
+      } else if (position.includes('manager')) {
         requestUserRole = 'manager';
-      } else if (request.user.position.toLowerCase().includes('hr')) {
+      } else if (position.includes('hr')) {
         requestUserRole = 'hr';
+      } else {
+        // Default to employee if no specific role is detected
+        requestUserRole = 'employee';
       }
+      
+      console.log('Position detected:', position, 'Role assigned:', requestUserRole);
+    } else {
+      // If no position is available, default to employee
+      requestUserRole = 'employee';
+      console.log('No position available, defaulting to employee role');
     }
     
     console.log('Request user role determined as:', requestUserRole);
@@ -79,12 +89,27 @@ const TeamLeavesPage: React.FC = () => {
     console.log('Checking approval eligibility in TeamLeavesPage:', {
       userRole,
       requestUserId: request.user?.id,
+      requestUserName: `${request.user?.firstName} ${request.user?.lastName}`,
+      requestUserPosition: request.user?.position,
       requestUserRole,
       requestStatus: request.status,
       metadata: request.metadata,
       isOwnRequest: user?.id === request.userId
     });
     
+    // Special case for managers approving team lead requests
+    if (userRole === 'manager' && requestUserRole === 'team_lead') {
+      console.log('SPECIAL CASE: Manager should be able to approve Team Lead request');
+    }
+    
+    // Special case for managers approving team lead requests
+    if (userRole === 'manager' && requestUserRole === 'team_lead' && 
+        (request.status === 'pending' || request.status === 'partially_approved')) {
+      console.log('Manager can approve team lead request - special case override');
+      return true;
+    }
+    
+    // Use the utility function for all other cases
     return canApproveRequestUtil(userRole, hasCustomAdminRole, request.status, request.metadata, requestUserRole);
   };
 

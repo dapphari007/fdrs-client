@@ -143,7 +143,13 @@ export const canApproveRequest = (
     // Special case handling for specific role combinations
     // For team lead requests, managers should be able to approve
     if (requestUserRole === "team_lead" && isManager) {
-      console.log("Manager can approve Team Lead's request");
+      console.log("Manager can approve Team Lead's request - SPECIAL CASE TRIGGERED");
+      return true;
+    }
+    
+    // Additional check for managers approving team lead requests
+    if (requestUserRole === "team_lead" && userRole === "manager") {
+      console.log("Manager can approve Team Lead's request - ADDITIONAL CHECK");
       return true;
     }
     
@@ -180,6 +186,12 @@ export const canApproveRequest = (
     // Special case handling for specific role combinations in partially approved state
     if (requestUserRole === "team_lead" && isManager && nextRequiredLevel === 2) {
       console.log("Manager can approve Team Lead's partially approved request at level 2");
+      return true;
+    }
+    
+    // Additional check for managers approving team lead requests
+    if (requestUserRole === "team_lead" && userRole === "manager") {
+      console.log("Manager can approve Team Lead's partially approved request - ADDITIONAL CHECK");
       return true;
     }
     
