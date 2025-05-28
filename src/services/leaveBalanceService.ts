@@ -188,12 +188,17 @@ export const checkLeaveTypeBalances = async (
       return { exists: false, count: 0 };
     }
     
+    // Add a timeout to the request to prevent hanging
     const url = `/leave-balances/check-type/${leaveTypeId}`;
     console.log("Making request to:", url, "with params:", { year });
     
+    // Use a more robust approach with timeout
     const response = await get<{ exists: boolean; count: number }>(
       url,
-      { params: { year } }
+      { 
+        params: { year },
+        timeout: 10000 // 10 second timeout
+      }
     );
     
     console.log("Check leave type balances response:", response);
