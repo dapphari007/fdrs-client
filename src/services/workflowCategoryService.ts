@@ -16,7 +16,7 @@ export const createWorkflowCategory = async (
   categoryData: Omit<WorkflowCategory, "id" | "createdAt" | "updatedAt">
 ) => {
   try {
-    const response = await api.post("/api/workflow-categories", categoryData);
+    const response = await api.post("/workflow-categories", categoryData);
     return response.data;
   } catch (error) {
     console.error('Error creating workflow category:', error);
@@ -31,8 +31,8 @@ export const getAllWorkflowCategories = async (filters?: { isActive?: boolean })
       params.append("isActive", String(filters.isActive));
     }
     
-    console.log('Fetching workflow categories with URL:', `/api/workflow-categories${params.toString() ? `?${params.toString()}` : ''}`);
-    const response = await api.get(`/api/workflow-categories${params.toString() ? `?${params.toString()}` : ''}`);
+    console.log('Fetching workflow categories with URL:', `/workflow-categories${params.toString() ? `?${params.toString()}` : ''}`);
+    const response = await api.get(`/workflow-categories${params.toString() ? `?${params.toString()}` : ''}`);
     console.log('Workflow categories response:', response.data);
     return response.data.workflowCategories || [];
   } catch (error) {
@@ -44,7 +44,7 @@ export const getAllWorkflowCategories = async (filters?: { isActive?: boolean })
 
 export const getWorkflowCategoryById = async (id: string) => {
   try {
-    const response = await api.get(`/api/workflow-categories/${id}`);
+    const response = await api.get(`/workflow-categories/${id}`);
     return response.data.workflowCategory;
   } catch (error) {
     console.error(`Error fetching workflow category with ID ${id}:`, error);
@@ -57,7 +57,7 @@ export const updateWorkflowCategory = async (
   categoryData: Partial<Omit<WorkflowCategory, "id" | "createdAt" | "updatedAt">>
 ) => {
   try {
-    const response = await api.put(`/api/workflow-categories/${id}`, categoryData);
+    const response = await api.put(`/workflow-categories/${id}`, categoryData);
     return response.data;
   } catch (error) {
     console.error(`Error updating workflow category with ID ${id}:`, error);
@@ -67,7 +67,7 @@ export const updateWorkflowCategory = async (
 
 export const deleteWorkflowCategory = async (id: string) => {
   try {
-    const response = await api.delete(`/api/workflow-categories/${id}`);
+    const response = await api.delete(`/workflow-categories/${id}`);
     return response.data;
   } catch (error) {
     console.error(`Error deleting workflow category with ID ${id}:`, error);
@@ -77,7 +77,7 @@ export const deleteWorkflowCategory = async (id: string) => {
 
 export const toggleWorkflowCategoryStatus = async (id: string) => {
   try {
-    const response = await api.patch(`/api/workflow-categories/${id}/toggle-status`);
+    const response = await api.patch(`/workflow-categories/${id}/toggle-status`);
     return response.data;
   } catch (error) {
     console.error(`Error toggling workflow category status with ID ${id}:`, error);

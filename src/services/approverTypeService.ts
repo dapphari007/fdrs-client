@@ -14,7 +14,7 @@ export const createApproverType = async (
   approverTypeData: Omit<ApproverType, "id" | "createdAt" | "updatedAt">
 ) => {
   try {
-    const response = await api.post("/api/approver-types", approverTypeData);
+    const response = await api.post("/approver-types", approverTypeData);
     return response.data;
   } catch (error) {
     console.error('Error creating approver type:', error);
@@ -29,8 +29,8 @@ export const getAllApproverTypes = async (filters?: { isActive?: boolean }) => {
       params.append("isActive", String(filters.isActive));
     }
     
-    console.log('Fetching approver types with URL:', `/api/approver-types${params.toString() ? `?${params.toString()}` : ''}`);
-    const response = await api.get(`/api/approver-types${params.toString() ? `?${params.toString()}` : ''}`);
+    console.log('Fetching approver types with URL:', `/approver-types${params.toString() ? `?${params.toString()}` : ''}`);
+    const response = await api.get(`/approver-types${params.toString() ? `?${params.toString()}` : ''}`);
     console.log('Approver types response:', response.data);
     return response.data.approverTypes || [];
   } catch (error) {
@@ -42,7 +42,7 @@ export const getAllApproverTypes = async (filters?: { isActive?: boolean }) => {
 
 export const getApproverTypeById = async (id: string) => {
   try {
-    const response = await api.get(`/api/approver-types/${id}`);
+    const response = await api.get(`/approver-types/${id}`);
     return response.data.approverType;
   } catch (error) {
     console.error(`Error fetching approver type with ID ${id}:`, error);
@@ -55,7 +55,7 @@ export const updateApproverType = async (
   approverTypeData: Partial<Omit<ApproverType, "id" | "createdAt" | "updatedAt">>
 ) => {
   try {
-    const response = await api.put(`/api/approver-types/${id}`, approverTypeData);
+    const response = await api.put(`/approver-types/${id}`, approverTypeData);
     return response.data;
   } catch (error) {
     console.error(`Error updating approver type with ID ${id}:`, error);
@@ -65,7 +65,7 @@ export const updateApproverType = async (
 
 export const deleteApproverType = async (id: string) => {
   try {
-    const response = await api.delete(`/api/approver-types/${id}`);
+    const response = await api.delete(`/approver-types/${id}`);
     return response.data;
   } catch (error) {
     console.error(`Error deleting approver type with ID ${id}:`, error);
@@ -75,7 +75,7 @@ export const deleteApproverType = async (id: string) => {
 
 export const toggleApproverTypeStatus = async (id: string) => {
   try {
-    const response = await api.patch(`/api/approver-types/${id}/toggle-status`);
+    const response = await api.patch(`/approver-types/${id}/toggle-status`);
     return response.data;
   } catch (error) {
     console.error(`Error toggling approver type status with ID ${id}:`, error);
