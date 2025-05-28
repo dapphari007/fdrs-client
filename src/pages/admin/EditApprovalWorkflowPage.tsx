@@ -271,25 +271,32 @@ export default function EditApprovalWorkflowPage() {
       // Determine the role value based on approverType
       let roleValue: string;
       let backendApproverType: string;
+      let isDepartmentSpecific: boolean = false;
       
       if (step.approverType === "specific_user" && step.approverId) {
         roleValue = step.approverId;
         backendApproverType = "specificUser";
+        isDepartmentSpecific = false;
       } else if (step.approverType === "team_lead") {
         roleValue = "TEAM_LEAD";
         backendApproverType = "teamLead";
+        isDepartmentSpecific = true; // Team leads are department-specific
       } else if (step.approverType === "manager") {
         roleValue = "MANAGER";
         backendApproverType = "manager";
+        isDepartmentSpecific = true; // Managers are department-specific
       } else if (step.approverType === "hr") {
         roleValue = "HR";
         backendApproverType = "hr";
+        isDepartmentSpecific = false; // HR is not department-specific
       } else if (step.approverType === "department_head") {
         roleValue = "MANAGER"; // Department head is typically a manager role
         backendApproverType = "departmentHead";
+        isDepartmentSpecific = true; // Department heads are department-specific
       } else {
         roleValue = step.approverType.toUpperCase();
         backendApproverType = step.approverType;
+        isDepartmentSpecific = false; // Default to not department-specific
       }
       
       // Create fallback roles based on the approver type
@@ -311,7 +318,7 @@ export default function EditApprovalWorkflowPage() {
       const approvalLevel = {
         level: index + 1,
         roles: [roleValue],
-        departmentSpecific: step.approverType !== "specific_user", // Set department-specific for role-based approvers
+        departmentSpecific: isDepartmentSpecific,
         approverType: backendApproverType,
         fallbackRoles: fallbackRoles,
         required: step.required
@@ -621,6 +628,39 @@ export default function EditApprovalWorkflowPage() {
                     </span>
                   </label>
                 </div>
+                
+                {/* Department-specific information */}
+                {watchSteps[index]?.approverType && (
+                  <div className="md:col-span-2 mt-2">
+                    <div className="text-sm text-gray-600 bg-gray-100 p-2 rounded">
+                      {watchSteps[index]?.approverType === "team_lead" && (
+                        <p>
+                          <span className="font-medium">Team Lead:</span> Department-specific. The team lead of the employee's department will be assigned.
+                        </p>
+                      )}
+                      {watchSteps[index]?.approverType === "manager" && (
+                        <p>
+                          <span className="font-medium">Manager:</span> Department-specific. The manager of the employee's department will be assigned.
+                        </p>
+                      )}
+                      {watchSteps[index]?.approverType === "hr" && (
+                        <p>
+                          <span className="font-medium">HR:</span> Not department-specific. Any HR personnel can approve this request.
+                        </p>
+                      )}
+                      {watchSteps[index]?.approverType === "department_head" && (
+                        <p>
+                          <span className="font-medium">Department Head:</span> Department-specific. The head of the employee's department will be assigned.
+                        </p>
+                      )}
+                      {watchSteps[index]?.approverType === "specific_user" && (
+                        <p>
+                          <span className="font-medium">Specific User:</span> Not department-specific. The selected user will be assigned regardless of department.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           ))}
