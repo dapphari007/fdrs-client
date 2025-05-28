@@ -169,13 +169,20 @@ export default function EditLeaveTypePage() {
   }
 
   if ((!leaveType && !isLoadingLeaveType) || isError) {
+    const errorMessage = apiError instanceof Error 
+      ? apiError.message 
+      : "Leave type not found or you don't have permission to view it.";
+      
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          <p className="font-bold">Leave type not found or you don't have permission to view it.</p>
+          <p className="font-bold">{errorMessage}</p>
           <p className="text-sm mt-2">
             This could be due to an invalid leave type ID or insufficient permissions.
             Please check the URL and try again, or contact your administrator.
+          </p>
+          <p className="text-sm mt-2">
+            Leave Type ID: {id}
           </p>
         </div>
         <button

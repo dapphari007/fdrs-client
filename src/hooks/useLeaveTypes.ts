@@ -25,7 +25,12 @@ export const useLeaveType = (id: string | undefined) => {
           throw new Error("Invalid response from server");
         }
         
-        // Even if leaveType is null, we return the response to allow the UI to handle it
+        // If there's no leave type but there is a message, throw an error with the message
+        if (!response.leaveType && response.message) {
+          throw new Error(response.message);
+        }
+        
+        // Return the response (which should contain a valid leave type at this point)
         return response;
       } catch (error) {
         console.error("Error fetching leave type:", error);
@@ -35,5 +40,6 @@ export const useLeaveType = (id: string | undefined) => {
     enabled: !!id,
     retry: 1,
     staleTime: 30000, // Data remains fresh for 30 seconds
+    retryDelay: 1000, // Wait 1 second between retries
   });
 };
