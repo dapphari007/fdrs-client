@@ -16,11 +16,22 @@ export const useLeaveType = (id: string | undefined) => {
         throw new Error("Leave type ID is required");
       }
       console.log("Fetching leave type with ID:", id);
-      const response = await getLeaveType(id);
-      console.log("Leave type API response:", response);
-      return response;
+      try {
+        const response = await getLeaveType(id);
+        console.log("Leave type API response:", response);
+        
+        if (!response || !response.leaveType) {
+          throw new Error("Leave type not found or invalid response format");
+        }
+        
+        return response;
+      } catch (error) {
+        console.error("Error fetching leave type:", error);
+        throw error;
+      }
     },
     enabled: !!id,
     retry: 1,
+    staleTime: 30000, // Data remains fresh for 30 seconds
   });
 };
