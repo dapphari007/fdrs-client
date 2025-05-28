@@ -129,36 +129,71 @@ export const canApproveRequest = (
   
   // Handle hierarchical approval flow based on requestUserRole
   if (requestStatus === "pending") {
+    console.log(`Processing pending request from ${requestUserRole || 'unknown role'} by ${userRole}`);
+    
     const requiredApprovalLevel = getNextApprovalLevel(requestUserRole);
+    console.log(`Required approval level: ${requiredApprovalLevel}, User approval level: ${userApprovalLevel}`);
     
     // Check if the current user's approval level matches what's required for this request
     if (userApprovalLevel === requiredApprovalLevel) {
+      console.log("User has the exact required approval level");
       return true;
     }
     
     // Special case handling for specific role combinations
-    if (requestUserRole === "team_lead" && isManager) return true;
-    if (requestUserRole === "manager" && isHR) return true;
-    if (requestUserRole === "hr" && (isAdmin || isSuperAdmin)) return true;
+    // For team lead requests, managers should be able to approve
+    if (requestUserRole === "team_lead" && isManager) {
+      console.log("Manager can approve Team Lead's request");
+      return true;
+    }
     
+    // For manager requests, HR should be able to approve
+    if (requestUserRole === "manager" && isHR) {
+      console.log("HR can approve Manager's request");
+      return true;
+    }
+    
+    // For HR requests, Admin or Super Admin should be able to approve
+    if (requestUserRole === "hr" && (isAdmin || isSuperAdmin)) {
+      console.log("Admin/Super Admin can approve HR's request");
+      return true;
+    }
+    
+    console.log("User cannot approve this request");
     return false;
   }
   
   // For partially approved requests, check if the user's level matches the next required level
   if (requestStatus === "partially_approved" && metadata) {
+    console.log(`Processing partially approved request from ${requestUserRole || 'unknown role'} by ${userRole}`);
+    
     const currentApprovalLevel = metadata.currentApprovalLevel || 0;
     const nextRequiredLevel = currentApprovalLevel + 1;
+    console.log(`Current approval level: ${currentApprovalLevel}, Next required level: ${nextRequiredLevel}, User approval level: ${userApprovalLevel}`);
     
     // If the request already has some approvals, check if this user is the next in line
     if (userApprovalLevel === nextRequiredLevel) {
+      console.log("User has the exact next required approval level");
       return true;
     }
     
     // Special case handling for specific role combinations in partially approved state
-    if (requestUserRole === "team_lead" && isManager && nextRequiredLevel === 2) return true;
-    if (requestUserRole === "manager" && isHR && nextRequiredLevel === 3) return true;
-    if (requestUserRole === "hr" && (isAdmin || isSuperAdmin) && nextRequiredLevel === 4) return true;
+    if (requestUserRole === "team_lead" && isManager && nextRequiredLevel === 2) {
+      console.log("Manager can approve Team Lead's partially approved request at level 2");
+      return true;
+    }
     
+    if (requestUserRole === "manager" && isHR && nextRequiredLevel === 3) {
+      console.log("HR can approve Manager's partially approved request at level 3");
+      return true;
+    }
+    
+    if (requestUserRole === "hr" && (isAdmin || isSuperAdmin) && nextRequiredLevel === 4) {
+      console.log("Admin/Super Admin can approve HR's partially approved request at level 4");
+      return true;
+    }
+    
+    console.log("User cannot approve this partially approved request");
     return false;
   }
   

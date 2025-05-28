@@ -59,10 +59,11 @@ const TeamLeavesPage: React.FC = () => {
     
     // Determine the role of the user who made the request
     // This helps ensure proper workflow (e.g., Team Lead requests go to Manager, not other Team Leads)
-    let requestUserRole;
+    // Note: role is not directly available in the user object from LeaveRequest type
+    // so we'll determine it based on position
+    let requestUserRole: string | undefined;
     
-    // Try to determine the role based on user data in the system
-    // We can use a simple mapping based on department/position if available
+    // Try to determine role based on position
     if (request.user?.position) {
       if (request.user.position.toLowerCase().includes('team lead')) {
         requestUserRole = 'team_lead';
@@ -72,6 +73,8 @@ const TeamLeavesPage: React.FC = () => {
         requestUserRole = 'hr';
       }
     }
+    
+    console.log('Request user role determined as:', requestUserRole);
     
     console.log('Checking approval eligibility in TeamLeavesPage:', {
       userRole,
