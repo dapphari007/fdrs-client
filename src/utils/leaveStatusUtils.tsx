@@ -101,39 +101,47 @@ export const canApproveRequest = (
   const isAdmin = userRole === "admin";
   const isSuperAdmin = userRole === "super_admin";
   const isManager = userRole === "manager";
-  const isTeamLead = userRole === "team_lead";
   const isHR = userRole === "hr";
   
   // If user has no approval level, they can't approve anything
   if (userApprovalLevel === 0) return false;
+  
+  // Define the approval workflow based on requester's role
+  const getNextApprovalLevel = (requesterRole?: string): number => {
+    switch (requesterRole) {
+      case "team_lead":
+        // Team Lead requests skip level 1 (Team Lead) and go to level 2 (Manager)
+        return 2;
+      case "manager":
+        // Manager requests skip levels 1-2 and go to level 3 (HR)
+        return 3;
+      case "hr":
+        // HR requests skip levels 1-3 and go to level 4 (Admin)
+        return 4;
+      default:
+        // Regular employee requests start at level 1 (Team Lead)
+        return 1;
+    }
+  };
   
   // Super admins and admins can approve any request
   if (isSuperAdmin || isAdmin || hasCustomAdminRole) return true;
   
   // Handle hierarchical approval flow based on requestUserRole
   if (requestStatus === "pending") {
-    // Team Lead's requests should be approved by Managers
-    if (requestUserRole === "team_lead" && isManager) {
+    const requiredApprovalLevel = getNextApprovalLevel(requestUserRole);
+    
+    // Check if the current user's approval level matches what's required for this request
+    if (userApprovalLevel === requiredApprovalLevel) {
       return true;
     }
     
-    // Manager's requests should be approved by HR
-    if (requestUserRole === "manager" && isHR) {
-      return true;
-    }
+    // Special case handling for specific role combinations
+    if (requestUserRole === "team_lead" && isManager) return true;
+    if (requestUserRole === "manager" && isHR) return true;
+    if (requestUserRole === "hr" && (isAdmin || isSuperAdmin)) return true;
     
-    // HR's requests should be approved by Admins
-    if (requestUserRole === "hr" && (isAdmin || isSuperAdmin)) {
-      return true;
-    }
-    
-    // For regular employee requests, Team Leads are the first approvers
-    if (requestUserRole === "employee" && isTeamLead) {
-      return true;
-    }
-    
-    // If no specific role match, use the default approval level logic
-    return userApprovalLevel === 1;
+    return false;
   }
   
   // For partially approved requests, check if the user's level matches the next required level
@@ -141,23 +149,17 @@ export const canApproveRequest = (
     const currentApprovalLevel = metadata.currentApprovalLevel || 0;
     const nextRequiredLevel = currentApprovalLevel + 1;
     
-    // Team Lead's partially approved requests should be approved by Managers
-    if (requestUserRole === "team_lead" && isManager && nextRequiredLevel === 2) {
+    // If the request already has some approvals, check if this user is the next in line
+    if (userApprovalLevel === nextRequiredLevel) {
       return true;
     }
     
-    // Manager's partially approved requests should be approved by HR
-    if (requestUserRole === "manager" && isHR && nextRequiredLevel === 3) {
-      return true;
-    }
+    // Special case handling for specific role combinations in partially approved state
+    if (requestUserRole === "team_lead" && isManager && nextRequiredLevel === 2) return true;
+    if (requestUserRole === "manager" && isHR && nextRequiredLevel === 3) return true;
+    if (requestUserRole === "hr" && (isAdmin || isSuperAdmin) && nextRequiredLevel === 4) return true;
     
-    // HR's partially approved requests should be approved by Admins
-    if (requestUserRole === "hr" && (isAdmin || isSuperAdmin) && nextRequiredLevel === 4) {
-      return true;
-    }
-    
-    // For regular flow, check if user's approval level matches the next required level
-    return userApprovalLevel === nextRequiredLevel;
+    return false;
   }
   
   return false;

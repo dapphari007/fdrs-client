@@ -52,16 +52,34 @@ const TeamLeavesPage: React.FC = () => {
   
   // Check if the current user can approve a specific leave request using the shared utility
   const canApproveRequest = (request: LeaveRequest) => {
-    // We need to get the user role from a different source since request.user doesn't have role
-    // We can use the userId to determine if this is a special role user, or pass undefined
-    // which will make the utility function use default approval logic
-    const requestUserRole = undefined; // We don't have access to the role from request.user
+    // First check if this is the user's own request - users shouldn't approve their own requests
+    if (user?.id === request.userId) {
+      return false;
+    }
+    
+    // Determine the role of the user who made the request
+    // This helps ensure proper workflow (e.g., Team Lead requests go to Manager, not other Team Leads)
+    let requestUserRole;
+    
+    // Try to determine the role based on user data in the system
+    // We can use a simple mapping based on department/position if available
+    if (request.user?.position) {
+      if (request.user.position.toLowerCase().includes('team lead')) {
+        requestUserRole = 'team_lead';
+      } else if (request.user.position.toLowerCase().includes('manager')) {
+        requestUserRole = 'manager';
+      } else if (request.user.position.toLowerCase().includes('hr')) {
+        requestUserRole = 'hr';
+      }
+    }
     
     console.log('Checking approval eligibility in TeamLeavesPage:', {
       userRole,
       requestUserId: request.user?.id,
+      requestUserRole,
       requestStatus: request.status,
-      metadata: request.metadata
+      metadata: request.metadata,
+      isOwnRequest: user?.id === request.userId
     });
     
     return canApproveRequestUtil(userRole, hasCustomAdminRole, request.status, request.metadata, requestUserRole);

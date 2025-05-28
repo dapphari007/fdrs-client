@@ -40,6 +40,11 @@ export default function ViewLeaveRequestPage() {
   const canApproveRequest = useMemo(() => {
     if (!leaveRequest || !leaveRequest.user) return false;
     
+    // First check if this is the user's own request - users shouldn't approve their own requests
+    if (user?.id === leaveRequest.userId) {
+      return false;
+    }
+    
     const hasCustomAdminRole = user?.roleObj?.permissions?.includes('admin') || false;
     const requestUserRole = leaveRequest.user.role;
     
@@ -47,7 +52,8 @@ export default function ViewLeaveRequestPage() {
       userRole: user?.role,
       requestUserRole,
       requestStatus: leaveRequest.status,
-      metadata: leaveRequest.metadata
+      metadata: leaveRequest.metadata,
+      isOwnRequest: user?.id === leaveRequest.userId
     });
     
     return canApproveRequestUtil(
