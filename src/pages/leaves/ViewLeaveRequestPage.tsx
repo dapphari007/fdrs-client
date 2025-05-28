@@ -53,7 +53,7 @@ export default function ViewLeaveRequestPage() {
     
     console.log('Checking approval eligibility:', {
       userRole: user?.role,
-      requestUserRole: leaveRequest.user.role,
+      requestUserRole: leaveRequest.user?.role,
       requestStatus: leaveRequest.status,
       metadata: leaveRequest.metadata,
       isOwnRequest: user?.id === leaveRequest.userId,

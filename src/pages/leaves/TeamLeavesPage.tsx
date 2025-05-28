@@ -67,7 +67,8 @@ const TeamLeavesPage: React.FC = () => {
         userRole,
         userApprovalLevel,
         requestStatus: request.status,
-        metadata: request.metadata
+        metadata: request.metadata,
+        requestUserRole: request.user?.role
       });
       
       // If there's a custom approval workflow defined
@@ -79,6 +80,12 @@ const TeamLeavesPage: React.FC = () => {
         // User can approve if their level matches the first required level
         return userApprovalLevel === firstRequiredLevel;
       } else {
+        // Check if the request is from a team lead and the current user is a manager
+        if (request.user?.role === 'team_lead' && userRole === 'manager') {
+          console.log('Manager can approve team lead request');
+          return true;
+        }
+        
         // If no custom workflow, only users with approval level 1 (team leads) can approve initial requests
         return userApprovalLevel === 1;
       }
@@ -103,12 +110,19 @@ const TeamLeavesPage: React.FC = () => {
           currentApprovalLevel,
           nextRequiredLevel,
           requiredLevels: sortedLevels,
-          requestStatus: request.status
+          requestStatus: request.status,
+          requestUserRole: request.user?.role
         });
         
         // User can approve if their level matches the next required level
         return userApprovalLevel === nextRequiredLevel;
       } else {
+        // Check if the request is from a team lead and the current user is a manager
+        if (request.user?.role === 'team_lead' && userRole === 'manager') {
+          console.log('Manager can approve team lead request');
+          return true;
+        }
+        
         // If no custom workflow, use the default sequential workflow
         const nextRequiredLevel = currentApprovalLevel + 1;
         

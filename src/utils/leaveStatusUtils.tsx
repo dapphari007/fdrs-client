@@ -147,6 +147,12 @@ export const canApproveRequest = (
       
       return canApprove;
     } else {
+      // Check if the request is from a team lead and the approver is a manager
+      if (metadata && metadata.requestUserRole === 'team_lead' && userRole === 'manager') {
+        console.log('Manager can approve team lead request');
+        return true;
+      }
+      
       // If no custom workflow, only team leads can approve initial requests
       if (isTeamLead) {
         console.log('Team lead can approve initial pending request');

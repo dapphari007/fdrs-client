@@ -159,6 +159,7 @@ export interface LeaveRequest {
     email?: string;
     department?: string;
     position?: string;
+    role?: string;
   };
 }
 
