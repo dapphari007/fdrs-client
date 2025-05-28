@@ -40,10 +40,17 @@ export const getAllWorkflowLevels = async (filters?: { isActive?: boolean }) => 
     const workflowLevels = response.data.workflowLevels || [];
     
     // Normalize the data to ensure fallbackRoles is always an array
-    return workflowLevels.map((level: Partial<WorkflowLevel>) => ({
-      ...level,
-      fallbackRoles: Array.isArray(level.fallbackRoles) ? level.fallbackRoles : []
-    }));
+    return workflowLevels.map((level: Partial<WorkflowLevel>) => {
+      // Create a new object with all properties from level
+      const normalizedLevel = { ...level };
+      
+      // Ensure fallbackRoles is always an array, even if it's null, undefined, or not an array
+      normalizedLevel.fallbackRoles = Array.isArray(normalizedLevel.fallbackRoles) 
+        ? normalizedLevel.fallbackRoles 
+        : [];
+        
+      return normalizedLevel;
+    });
   } catch (error) {
     console.error('Error fetching workflow levels:', error);
     // Return empty array instead of throwing to prevent UI errors
@@ -57,12 +64,15 @@ export const getWorkflowLevelById = async (id: string) => {
     
     // Ensure the workflowLevel has fallbackRoles as an array
     if (response.data.workflowLevel) {
-      return {
-        ...response.data.workflowLevel,
-        fallbackRoles: Array.isArray(response.data.workflowLevel.fallbackRoles) 
-          ? response.data.workflowLevel.fallbackRoles 
-          : []
-      };
+      // Create a new object with all properties from workflowLevel
+      const normalizedLevel = { ...response.data.workflowLevel };
+      
+      // Ensure fallbackRoles is always an array, even if it's null, undefined, or not an array
+      normalizedLevel.fallbackRoles = Array.isArray(normalizedLevel.fallbackRoles) 
+        ? normalizedLevel.fallbackRoles 
+        : [];
+        
+      return normalizedLevel;
     }
     
     return null;
@@ -125,10 +135,17 @@ export const getWorkflowLevelsForApprovalWorkflow = async () => {
     const workflowLevels = response.data.workflowLevels || [];
     
     // Normalize the data to ensure fallbackRoles is always an array
-    return workflowLevels.map((level: Partial<WorkflowLevel>) => ({
-      ...level,
-      fallbackRoles: Array.isArray(level.fallbackRoles) ? level.fallbackRoles : []
-    }));
+    return workflowLevels.map((level: Partial<WorkflowLevel>) => {
+      // Create a new object with all properties from level
+      const normalizedLevel = { ...level };
+      
+      // Ensure fallbackRoles is always an array, even if it's null, undefined, or not an array
+      normalizedLevel.fallbackRoles = Array.isArray(normalizedLevel.fallbackRoles) 
+        ? normalizedLevel.fallbackRoles 
+        : [];
+        
+      return normalizedLevel;
+    });
   } catch (error) {
     console.error('Error fetching workflow levels for approval workflow:', error);
     // Return empty array instead of throwing to prevent UI errors
