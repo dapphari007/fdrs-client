@@ -43,6 +43,13 @@ export default function ViewLeaveRequestPage() {
     const hasCustomAdminRole = user?.roleObj?.permissions?.includes('admin') || false;
     const requestUserRole = leaveRequest.user.role;
     
+    console.log('Checking approval eligibility:', {
+      userRole: user?.role,
+      requestUserRole,
+      requestStatus: leaveRequest.status,
+      metadata: leaveRequest.metadata
+    });
+    
     return canApproveRequestUtil(
       user?.role || '', 
       hasCustomAdminRole,
@@ -381,18 +388,20 @@ export default function ViewLeaveRequestPage() {
                 </div>
               )}
               
-              {/* Debug information - remove in production */}
+              {/* Debug information */}
               <div className="bg-gray-100 p-4 rounded-md mb-4 text-xs">
                 <p><strong>Debug Info:</strong></p>
                 <p>User Role: {user?.role}</p>
                 <p>User Approval Level: L{getApprovalLevel()}</p>
                 <p>Request Status: {leaveRequest?.status}</p>
+                <p>Request User Role: {leaveRequest?.user?.role}</p>
                 <p>Is Team Lead: {isTeamLead ? 'Yes' : 'No'}</p>
                 <p>Is Manager: {isManager ? 'Yes' : 'No'}</p>
                 <p>Is HR: {isHR ? 'Yes' : 'No'}</p>
                 <p>Is Super Admin: {isSuperAdmin ? 'Yes' : 'No'}</p>
                 <p>Is Partially Approved: {isPartiallyApproved ? 'Yes' : 'No'}</p>
                 <p>Can Approve Request: {canApproveRequest ? 'Yes' : 'No'}</p>
+                <p>Is Own Request: {isOwnRequest ? 'Yes' : 'No'}</p>
                 {leaveRequest?.metadata && (
                   <>
                     <p>Current Approval Step: {leaveRequest.metadata.currentApprovalLevel}</p>

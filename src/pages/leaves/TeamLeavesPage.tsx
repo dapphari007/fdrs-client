@@ -52,9 +52,19 @@ const TeamLeavesPage: React.FC = () => {
   
   // Check if the current user can approve a specific leave request using the shared utility
   const canApproveRequest = (request: LeaveRequest) => {
-    // The user property in LeaveRequest doesn't include role, so we pass undefined
-    // The utility function will handle this case appropriately
-    return canApproveRequestUtil(userRole, hasCustomAdminRole, request.status, request.metadata, undefined);
+    // We need to get the user role from a different source since request.user doesn't have role
+    // We can use the userId to determine if this is a special role user, or pass undefined
+    // which will make the utility function use default approval logic
+    const requestUserRole = undefined; // We don't have access to the role from request.user
+    
+    console.log('Checking approval eligibility in TeamLeavesPage:', {
+      userRole,
+      requestUserId: request.user?.id,
+      requestStatus: request.status,
+      metadata: request.metadata
+    });
+    
+    return canApproveRequestUtil(userRole, hasCustomAdminRole, request.status, request.metadata, requestUserRole);
   };
 
   // Check if user has permission to view team leaves
