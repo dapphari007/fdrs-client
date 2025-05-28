@@ -234,3 +234,16 @@ export const createAllLeaveBalancesForAllUsers = async (): Promise<{
   }>("/leave-balances/create-all-for-all-users", {});
   return response.results;
 };
+
+export const checkDatabaseFlushed = async (): Promise<{ isFlushed: boolean }> => {
+  try {
+    console.log("Checking if database is flushed...");
+    const response = await get<{ isFlushed: boolean }>("/leave-balances/check-flushed");
+    console.log("Database flush status response:", response);
+    return response;
+  } catch (error) {
+    console.error("Error checking database flush status:", error);
+    // Return a default response instead of throwing to prevent UI errors
+    return { isFlushed: false };
+  }
+};
