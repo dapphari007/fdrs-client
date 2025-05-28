@@ -50,23 +50,22 @@ export default function ViewLeaveRequestPage() {
     }
     
     const hasCustomAdminRole = user?.roleObj?.permissions?.includes('admin') || false;
-    const requestUserRole = leaveRequest.user.role;
     
     console.log('Checking approval eligibility:', {
       userRole: user?.role,
-      requestUserRole,
+      requestUserRole: leaveRequest.user.role,
       requestStatus: leaveRequest.status,
       metadata: leaveRequest.metadata,
       isOwnRequest: user?.id === leaveRequest.userId,
-      isTeamLead
+      isTeamLead,
+      isManager,
+      isHR,
+      isAdmin: user?.role === 'admin',
+      isSuperAdmin: user?.role === 'super_admin',
+      hasCustomAdminRole
     });
     
-    // Team leads should always be able to approve pending requests
-    if (isTeamLead && leaveRequest.status === 'pending') {
-      console.log('Team lead can approve pending request');
-      return true;
-    }
-    
+    // Use the utility function to determine if the user can approve based on the strict hierarchy
     const canApprove = canApproveRequestUtil(
       user?.role || '', 
       hasCustomAdminRole,
@@ -76,7 +75,7 @@ export default function ViewLeaveRequestPage() {
     
     console.log(`canApproveRequestUtil returned: ${canApprove}`);
     return canApprove;
-  }, [user, leaveRequest, isTeamLead]);
+  }, [user, leaveRequest, isTeamLead, isManager, isHR]);
 
   useEffect(() => {
     const fetchLeaveRequest = async () => {
@@ -388,27 +387,83 @@ export default function ViewLeaveRequestPage() {
 
           {/* Debug information - Always visible */}
           <div className="border-t border-gray-200 pt-6 mt-6">
-            <h3 className="text-lg font-medium mb-4">Debug Information</h3>
-            <div className="bg-gray-100 p-4 rounded-md mb-4 text-xs">
-              <p><strong>Debug Info:</strong></p>
-              <p>User Role: {user?.role}</p>
-              <p>User Approval Level: L{getApprovalLevel()}</p>
-              <p>Request Status: {leaveRequest?.status}</p>
-              <p>Request User Role: {leaveRequest?.user?.role}</p>
-              <p>Is Team Lead: {isTeamLead ? 'Yes' : 'No'}</p>
-              <p>Is Manager: {isManager ? 'Yes' : 'No'}</p>
-              <p>Is HR: {isHR ? 'Yes' : 'No'}</p>
-              <p>Is Super Admin: {isSuperAdmin ? 'Yes' : 'No'}</p>
-              <p>Is Partially Approved: {isPartiallyApproved ? 'Yes' : 'No'}</p>
-              <p>Can Approve Request: {canApproveRequest ? 'Yes' : 'No'}</p>
-              <p>Is Own Request: {isOwnRequest ? 'Yes' : 'No'}</p>
-              {leaveRequest?.metadata && (
-                <>
-                  <p>Current Approval Step: {leaveRequest.metadata.currentApprovalLevel}</p>
-                  <p>Next Required Step: {leaveRequest.metadata.currentApprovalLevel + 1}</p>
-                  <p>Required Approval Steps: {JSON.stringify(leaveRequest.metadata.requiredApprovalLevels)}</p>
-                </>
+            <h3 className="text-lg font-medium mb-4">Approval Workflow Status</h3>
+            <div className="bg-gray-100 p-4 rounded-md mb-4">
+              <div className="mb-4">
+                <h4 className="font-medium text-gray-700 mb-2">Current Status</h4>
+                <p className="text-sm">
+                  This leave request is currently <strong>{leaveRequest?.status.replace('_', ' ').toUpperCase()}</strong>
+                </p>
+                {leaveRequest?.metadata && leaveRequest.metadata.currentApprovalLevel > 0 && (
+                  <p className="text-sm mt-1">
+                    Approval progress: Level {leaveRequest.metadata.currentApprovalLevel} completed
+                    {leaveRequest.metadata.requiredApprovalLevels && 
+                     leaveRequest.metadata.requiredApprovalLevels.length > 0 && 
+                     ` of ${Math.max(...leaveRequest.metadata.requiredApprovalLevels)}`}
+                  </p>
+                )}
+              </div>
+              
+              <div className="mb-4">
+                <h4 className="font-medium text-gray-700 mb-2">Your Role</h4>
+                <p className="text-sm">
+                  You are logged in as: <strong>{user?.role?.replace('_', ' ').toUpperCase()}</strong> (Approval Level: {getApprovalLevel()})
+                </p>
+                <p className="text-sm mt-1">
+                  {canApproveRequest 
+                    ? "You can approve/reject this request based on the current workflow stage."
+                    : "You cannot approve/reject this request at the current workflow stage."}
+                </p>
+              </div>
+              
+              {leaveRequest?.metadata && leaveRequest.metadata.requiredApprovalLevels && (
+                <div className="mb-4">
+                  <h4 className="font-medium text-gray-700 mb-2">Approval Workflow</h4>
+                  <div className="flex flex-col space-y-2">
+                    {[...Array(Math.max(...leaveRequest.metadata.requiredApprovalLevels))].map((_, index) => {
+                      const level = index + 1;
+                      const isCompleted = leaveRequest.metadata.currentApprovalLevel >= level;
+                      const isCurrent = leaveRequest.metadata.currentApprovalLevel + 1 === level;
+                      const roleName = level === 1 ? "Team Lead" : level === 2 ? "Manager" : level === 3 ? "HR" : level === 4 ? "Admin" : "Super Admin";
+                      
+                      return (
+                        <div key={level} className="flex items-center">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 ${
+                            isCompleted ? "bg-green-500 text-white" : isCurrent ? "bg-blue-500 text-white" : "bg-gray-300"
+                          }`}>
+                            {isCompleted ? "✓" : level}
+                          </div>
+                          <span className={`text-sm ${isCompleted ? "text-green-600 font-medium" : isCurrent ? "text-blue-600 font-medium" : "text-gray-600"}`}>
+                            Level {level} - {roleName} {isCompleted ? "(Approved)" : isCurrent ? "(Current)" : "(Pending)"}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
+              
+              <div className="text-xs text-gray-500 mt-4 pt-4 border-t border-gray-200">
+                <p><strong>Technical Details:</strong></p>
+                <p>User Role: {user?.role}</p>
+                <p>User Approval Level: L{getApprovalLevel()}</p>
+                <p>Request Status: {leaveRequest?.status}</p>
+                <p>Request User Role: {leaveRequest?.user?.role}</p>
+                <p>Is Team Lead: {isTeamLead ? 'Yes' : 'No'}</p>
+                <p>Is Manager: {isManager ? 'Yes' : 'No'}</p>
+                <p>Is HR: {isHR ? 'Yes' : 'No'}</p>
+                <p>Is Super Admin: {isSuperAdmin ? 'Yes' : 'No'}</p>
+                <p>Is Partially Approved: {isPartiallyApproved ? 'Yes' : 'No'}</p>
+                <p>Can Approve Request: {canApproveRequest ? 'Yes' : 'No'}</p>
+                <p>Is Own Request: {isOwnRequest ? 'Yes' : 'No'}</p>
+                {leaveRequest?.metadata && (
+                  <>
+                    <p>Current Approval Step: {leaveRequest.metadata.currentApprovalLevel}</p>
+                    <p>Next Required Step: {leaveRequest.metadata.currentApprovalLevel + 1}</p>
+                    <p>Required Approval Steps: {JSON.stringify(leaveRequest.metadata.requiredApprovalLevels)}</p>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 

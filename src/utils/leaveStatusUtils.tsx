@@ -114,44 +114,54 @@ export const canApproveRequest = (
     return false;
   }
   
-  // Super admins and admins can approve any request
+  // Super admins and admins can approve any request, but we'll still log it
   if (isSuperAdmin || isAdmin || hasCustomAdminRole) {
     console.log('User is admin or super admin');
     return true;
   }
   
-  // For pending requests without metadata, any user with approval level can approve
-  if (requestStatus === "pending") {
-    console.log(`Processing pending request by ${userRole} with level ${userApprovalLevel}`);
+  // For pending deletion requests, only admins and super admins can approve
+  if (requestStatus === "pending_deletion") {
+    console.log('Request is pending deletion, only admins can approve');
+    return isAdmin || isSuperAdmin || hasCustomAdminRole;
+  }
+  
+  // For initial pending requests (no approval history yet)
+  if (requestStatus === "pending" && (!metadata || !metadata.currentApprovalLevel)) {
+    console.log(`Processing initial pending request by ${userRole} with level ${userApprovalLevel}`);
     
-    // Team leads can always approve pending requests
+    // Only team leads can approve initial pending requests
     if (isTeamLead) {
-      console.log('Team lead can approve pending request');
+      console.log('Team lead can approve initial pending request');
       return true;
     }
     
-    // For other roles, check if they have an approval level
-    return userApprovalLevel > 0;
+    console.log('Only team leads can approve initial pending requests');
+    return false;
   }
   
-  // For partially approved requests, check if the user's level matches the next required level
-  if (requestStatus === "partially_approved" && metadata) {
+  // For partially approved requests, strictly enforce the approval hierarchy
+  if ((requestStatus === "partially_approved" || requestStatus === "pending") && metadata) {
     const currentApprovalLevel = metadata.currentApprovalLevel || 0;
     const nextRequiredLevel = currentApprovalLevel + 1;
     
-    console.log(`Processing partially approved request by ${userRole}:`, {
+    console.log(`Processing partially approved request:`, {
+      userRole,
       currentApprovalLevel,
       nextRequiredLevel,
       userApprovalLevel
     });
     
-    // User can approve if their level matches the next required level
-    return userApprovalLevel === nextRequiredLevel;
-  }
-  
-  // For pending deletion requests, only admins and super admins can approve
-  if (requestStatus === "pending_deletion") {
-    return isAdmin || isSuperAdmin || hasCustomAdminRole;
+    // User can approve only if their level exactly matches the next required level
+    const canApprove = userApprovalLevel === nextRequiredLevel;
+    
+    if (canApprove) {
+      console.log(`User with role ${userRole} can approve as their level ${userApprovalLevel} matches the required next level ${nextRequiredLevel}`);
+    } else {
+      console.log(`User with role ${userRole} cannot approve as their level ${userApprovalLevel} does not match the required next level ${nextRequiredLevel}`);
+    }
+    
+    return canApprove;
   }
   
   console.log('No approval condition met');
